@@ -1,0 +1,4 @@
+/target
+.qodo
+.env
+.DS_Store
