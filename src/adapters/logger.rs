@@ -36,5 +36,4 @@ pub fn init_logger(config: &Config) {
 
   log::info!("Logger initialized with level: {}", config.log_level);
   log::info!("Environment: {:?}", config.environment);
-  log::info!("🚀 Application: {} running on port {}", config.name, config.port);
 }

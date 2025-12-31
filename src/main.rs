@@ -2,11 +2,24 @@ mod config;
 mod adapters;
 
 use config::Config;
-use crate::adapters::log;
+use actix_web::{HttpResponse, Responder, get, App, HttpServer};
+use crate::adapters::logger;
 
-fn main() {
+#[get("/healthz")]
+async fn healthz() -> impl Responder {
+  HttpResponse::NoContent().finish()
+}
+
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
   let config = Config::from_env();
-  log::init_logger(&config);
+  logger::init_logger(&config);
 
-  println!("Config is ready, {:?}", config);
+  let server = HttpServer::new(|| {
+    App::new().service(healthz)
+  });
+
+
+  log::info!("🚀 Application: {} running on port {}", config.name, config.port);
+  server.bind((config.app_host, config.port))?.run().await
 }

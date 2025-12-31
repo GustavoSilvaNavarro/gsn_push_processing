@@ -47,7 +47,8 @@ pub struct Config {
 	pub name: String,
 	pub environment: Environment,
 	pub log_level: LogLevel,
-	pub port: u32,
+	pub app_host: String,
+	pub port: u16,
 	pub url_prefix: String,
 	pub api_url: String,
 }
@@ -58,6 +59,7 @@ impl Default for Config {
 			name: String::from("gsn_push_processing"),
 			environment: Environment::Dev,
 			log_level: LogLevel::Info,
+			app_host: String::from("127.0.0.1"),
 			port: 8080,
 			url_prefix: String::from("/api"),
 			api_url: String::from("http://localhost:8080"),
