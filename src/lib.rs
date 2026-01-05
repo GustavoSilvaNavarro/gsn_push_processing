@@ -1,2 +1,3 @@
-mod config;
 mod adapters;
+mod config;
+mod routes;
