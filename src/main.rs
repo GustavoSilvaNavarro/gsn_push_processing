@@ -1,12 +1,14 @@
 mod adapters;
 mod config;
+mod models;
 mod routes;
 
 use actix_web::{
     App, HttpServer,
     middleware::{Compress, Logger},
+    web,
 };
-use adapters::logger;
+use adapters::{db, logger};
 use config::Config;
 
 #[actix_web::main]
@@ -14,11 +16,31 @@ async fn main() -> std::io::Result<()> {
     let config = Config::from_env();
     logger::init_logger(&config);
 
+    // Initialize database connection pool
+    let db_config = db::DatabaseConfig {
+        url: config.database_url.clone(),
+        max_connections: config.db_max_connections,
+        min_connections: config.db_min_connections,
+        connect_timeout: 30,
+        idle_timeout: 600,
+    };
+
+    let pool = db::init_pool(&db_config)
+        .await
+        .expect("Failed to initialize database pool");
+
+    // Database health check
+    if let Err(e) = db::health_check(&pool).await {
+        log::error!("❌ Database health check failed: {}", e);
+        panic!("Database is not healthy");
+    }
+
     let bind_address = (config.app_host.as_str(), config.port);
     let workers = num_cpus::get().clamp(1, 4);
 
-    let server = HttpServer::new(|| {
+    let server = HttpServer::new(move || {
         App::new()
+            .app_data(web::Data::new(pool.clone()))
             .wrap(Logger::default())
             .wrap(Compress::default())
             .configure(routes::cfg_monitoring_routes)

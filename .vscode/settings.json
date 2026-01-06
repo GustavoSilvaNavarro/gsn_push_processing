@@ -7,8 +7,10 @@
     "dotenv",
     "dotenvy",
     "healthz",
+    "plpgsql",
     "qodo",
     "serde",
-    "sqlx"
+    "sqlx",
+    "timescaledb"
   ]
 }

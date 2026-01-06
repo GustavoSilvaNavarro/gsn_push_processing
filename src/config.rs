@@ -51,6 +51,11 @@ pub struct Config {
     pub port: u16,
     pub url_prefix: String,
     pub api_url: String,
+    pub database_url: String,
+    pub db_max_connections: u32,
+    pub db_min_connections: u32,
+    pub db_timeout_connection: u64,
+    pub db_idle_timeout: u64,
 }
 
 impl Default for Config {
@@ -63,6 +68,11 @@ impl Default for Config {
             port: 8080,
             url_prefix: String::from("/api"),
             api_url: String::from("http://localhost:8080"),
+            database_url: String::new(),
+            db_max_connections: 10,
+            db_min_connections: 2,
+            db_timeout_connection: 30,
+            db_idle_timeout: 600,
         }
     }
 }

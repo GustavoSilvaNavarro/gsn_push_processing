@@ -1,0 +1,9 @@
+services:
+  db:
+    image: timescale/timescaledb:latest-pg17
+    environment:
+      POSTGRES_DB: savings
+      POSTGRES_PASSWORD: password123
+      POSTGRES_USER: postgres
+    ports:
+      - 5433:5432
