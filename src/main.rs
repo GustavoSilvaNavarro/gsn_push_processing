@@ -6,7 +6,7 @@ mod routes;
 use actix_web::{
     App, HttpServer,
     middleware::{Compress, Logger},
-    web,
+    web::{Data, scope},
 };
 use adapters::{db, logger};
 use config::Config;
@@ -40,10 +40,11 @@ async fn main() -> std::io::Result<()> {
 
     let server = HttpServer::new(move || {
         App::new()
-            .app_data(web::Data::new(pool.clone()))
+            .app_data(Data::new(pool.clone()))
             .wrap(Logger::default())
             .wrap(Compress::default())
             .configure(routes::cfg_monitoring_routes)
+            .service(scope(&config.url_prefix).configure(routes::cfg_savings_routes))
     });
 
     log::info!(
