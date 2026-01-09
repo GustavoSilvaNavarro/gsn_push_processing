@@ -2,6 +2,7 @@ mod adapters;
 mod config;
 mod models;
 mod routes;
+mod services;
 
 use actix_web::{
     App, HttpServer,
