@@ -1,16 +1,35 @@
 mod adapters;
 mod config;
+mod errors;
 mod models;
 mod routes;
 mod services;
 
 use actix_web::{
     App, HttpServer,
+    error::{InternalError, JsonPayloadError},
     middleware::{Compress, Logger},
-    web::{Data, scope},
+    web::{Data, JsonConfig, scope},
 };
 use adapters::{db, logger};
 use config::Config;
+
+fn json_error_handler(err: JsonPayloadError, _req: &actix_web::HttpRequest) -> actix_web::Error {
+    let error_message = match &err {
+        JsonPayloadError::Deserialize(de_err) => de_err.to_string(),
+        JsonPayloadError::ContentType => {
+            "Invalid content type, expected application/json".to_string()
+        }
+        JsonPayloadError::Payload(payload_err) => format!("Payload error: {}", payload_err),
+        _ => "Invalid JSON payload".to_string(),
+    };
+
+    let response = serde_json::json!({
+        "error": error_message
+    });
+
+    InternalError::from_response(err, actix_web::HttpResponse::BadRequest().json(response)).into()
+}
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -42,6 +61,7 @@ async fn main() -> std::io::Result<()> {
     let server = HttpServer::new(move || {
         App::new()
             .app_data(Data::new(pool.clone()))
+            .app_data(JsonConfig::default().error_handler(json_error_handler))
             .wrap(Logger::default())
             .wrap(Compress::default())
             .configure(routes::cfg_monitoring_routes)

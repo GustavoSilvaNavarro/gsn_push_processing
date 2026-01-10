@@ -1,3 +1,4 @@
+use crate::errors::{AppError, AppResult};
 use crate::models::transactions::{CreateTransaction, Transaction};
 use sqlx::PgPool;
 
@@ -7,7 +8,7 @@ impl SavingsService {
     pub async fn create_new_saving(
         db: &PgPool,
         payload: &CreateTransaction,
-    ) -> Result<Transaction, sqlx::Error> {
+    ) -> AppResult<Transaction> {
         sqlx::query_as::<_, Transaction>(
             r#"
             INSERT INTO transactions (amount, source, created_at, updated_at)
@@ -19,6 +20,7 @@ impl SavingsService {
         .bind(&payload.source)
         .fetch_one(db)
         .await
+        .map_err(AppError::from)
     }
 
     // pub async fn get_by_id(
