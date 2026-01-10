@@ -17,7 +17,7 @@ impl Default for DatabaseConfig {
             url: String::new(),
             max_connections: 10,
             min_connections: 2,
-            connect_timeout: 30,
+            connect_timeout: 10,
             idle_timeout: 600,
         }
     }
