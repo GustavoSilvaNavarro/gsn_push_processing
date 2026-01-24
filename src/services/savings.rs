@@ -37,25 +37,22 @@ impl SavingsService {
         .map_err(AppError::from)
     }
 
-    // /// List all transactions
-    // pub async fn list(
-    //     pool: &PgPool,
-    //     limit: i64,
-    //     offset: i64,
-    // ) -> Result<Vec<Transaction>, sqlx::Error> {
-    //     sqlx::query_as::<_, Transaction>(
-    //         r#"
-    //         SELECT id, amount, source, created_at, updated_at
-    //         FROM transactions
-    //         ORDER BY created_at DESC
-    //         LIMIT $1 OFFSET $2
-    //         "#,
-    //     )
-    //     .bind(limit)
-    //     .bind(offset)
-    //     .fetch_all(pool)
-    //     .await
-    // }
+    /// List all transactions
+    pub async fn list_savings(db: &PgPool, limit: i32, offset: i32) -> AppResult<Vec<Transaction>> {
+        sqlx::query_as::<_, Transaction>(
+            r#"
+            SELECT id, amount, source, created_at, updated_at
+            FROM transactions
+            ORDER BY created_at DESC
+            LIMIT $1 OFFSET $2
+            "#,
+        )
+        .bind(limit)
+        .bind(offset)
+        .fetch_all(db)
+        .await
+        .map_err(AppError::from)
+    }
 
     // /// Update a transaction
     // pub async fn update(
@@ -91,12 +88,19 @@ impl SavingsService {
     //     q.bind(id).fetch_optional(pool).await
     // }
 
-    pub async fn delete(db: &PgPool, id: i64) -> AppResult<bool> {
+    pub async fn delete_saving(db: &PgPool, saving_id: i64) -> AppResult<()> {
         let result = sqlx::query("DELETE FROM transactions WHERE id = $1")
-            .bind(id)
+            .bind(saving_id)
             .execute(db)
             .await?;
 
-        Ok(result.rows_affected() > 0)
+        if result.rows_affected() == 0 {
+            return Err(AppError::NotFound(format!(
+                "Saving with ID {} not found",
+                saving_id
+            )));
+        }
+
+        Ok(())
     }
 }
