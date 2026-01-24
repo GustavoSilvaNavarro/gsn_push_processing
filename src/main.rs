@@ -7,12 +7,27 @@ mod services;
 
 use actix_web::{
     App, HttpServer,
-    error::{InternalError, JsonPayloadError},
+    error::{InternalError, JsonPayloadError, PathError},
     middleware::{Compress, Logger},
-    web::{Data, JsonConfig, scope},
+    web::{Data, JsonConfig, PathConfig, scope},
 };
 use adapters::{db, logger};
 use config::Config;
+
+fn path_error_handler(err: PathError, _req: &actix_web::HttpRequest) -> actix_web::Error {
+    let error_message = match &err {
+        PathError::Deserialize(de_err) => {
+            format!("Invalid path parameter: {}", de_err)
+        }
+        _ => "Invalid path parameter".to_string(),
+    };
+
+    let response = serde_json::json!({
+        "error": error_message
+    });
+
+    InternalError::from_response(err, actix_web::HttpResponse::BadRequest().json(response)).into()
+}
 
 fn json_error_handler(err: JsonPayloadError, _req: &actix_web::HttpRequest) -> actix_web::Error {
     let error_message = match &err {
@@ -62,6 +77,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(Data::new(pool.clone()))
             .app_data(JsonConfig::default().error_handler(json_error_handler))
+            .app_data(PathConfig::default().error_handler(path_error_handler))
             .wrap(Logger::default())
             .wrap(Compress::default())
             .configure(routes::cfg_monitoring_routes)

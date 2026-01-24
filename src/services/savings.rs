@@ -23,21 +23,19 @@ impl SavingsService {
         .map_err(AppError::from)
     }
 
-    // pub async fn get_by_id(
-    //     pool: &PgPool,
-    //     id: i64,
-    // ) -> Result<Option<Transaction>, sqlx::Error> {
-    //     sqlx::query_as::<_, Transaction>(
-    //         r#"
-    //         SELECT id, amount, source, created_at, updated_at
-    //         FROM transactions
-    //         WHERE id = $1
-    //         "#,
-    //     )
-    //     .bind(id)
-    //     .fetch_optional(pool)
-    //     .await
-    // }
+    pub async fn get_by_id(db: &PgPool, id: i64) -> AppResult<Option<Transaction>> {
+        sqlx::query_as::<_, Transaction>(
+            r#"
+            SELECT id, amount, source, created_at, updated_at
+            FROM transactions
+            WHERE id = $1
+            "#,
+        )
+        .bind(id)
+        .fetch_optional(db)
+        .await
+        .map_err(AppError::from)
+    }
 
     // /// List all transactions
     // pub async fn list(
@@ -93,13 +91,12 @@ impl SavingsService {
     //     q.bind(id).fetch_optional(pool).await
     // }
 
-    // /// Delete a transaction
-    // pub async fn delete(pool: &PgPool, id: i64) -> Result<bool, sqlx::Error> {
-    //     let result = sqlx::query("DELETE FROM transactions WHERE id = $1")
-    //         .bind(id)
-    //         .execute(pool)
-    //         .await?;
+    pub async fn delete(db: &PgPool, id: i64) -> AppResult<bool> {
+        let result = sqlx::query("DELETE FROM transactions WHERE id = $1")
+            .bind(id)
+            .execute(db)
+            .await?;
 
-    //     Ok(result.rows_affected() > 0)
-    // }
+        Ok(result.rows_affected() > 0)
+    }
 }
