@@ -1,5 +1,5 @@
 use crate::errors::{AppError, AppResult};
-use crate::models::transactions::{CreateTransaction, Transaction};
+use crate::models::transactions::{CreateTransaction, Transaction, UpdateTransaction};
 use sqlx::PgPool;
 
 pub struct SavingsService;
@@ -37,7 +37,7 @@ impl SavingsService {
         .map_err(AppError::from)
     }
 
-    /// List all transactions
+    // List all transactions
     pub async fn list_savings(db: &PgPool, limit: i32, offset: i32) -> AppResult<Vec<Transaction>> {
         sqlx::query_as::<_, Transaction>(
             r#"
@@ -54,39 +54,37 @@ impl SavingsService {
         .map_err(AppError::from)
     }
 
-    // /// Update a transaction
-    // pub async fn update(
-    //     pool: &PgPool,
-    //     id: i64,
-    //     amount: Option<rust_decimal::Decimal>,
-    //     source: Option<String>,
-    // ) -> Result<Option<Transaction>, sqlx::Error> {
-    //     // Build dynamic query based on what's being updated
-    //     let mut query = String::from("UPDATE transactions SET updated_at = NOW()");
-    //     let mut bind_count = 1;
+    // Updates
+    pub async fn update_saving(
+        db: &PgPool,
+        saving_id: i64,
+        payload: &UpdateTransaction,
+    ) -> AppResult<Transaction> {
+        if payload.amount.is_none() && payload.source.is_none() {
+            return Err(AppError::BadRequest(
+                "At least one field must be provided for update".to_string(),
+            ));
+        }
 
-    //     if amount.is_some() {
-    //         query.push_str(&format!(", amount = ${}", bind_count));
-    //         bind_count += 1;
-    //     }
-    //     if source.is_some() {
-    //         query.push_str(&format!(", source = ${}", bind_count));
-    //         bind_count += 1;
-    //     }
+        let result = sqlx::query_as::<_, Transaction>(
+            r#"
+            UPDATE transactions
+            SET
+                amount = COALESCE($1, amount),
+                source = COALESCE($2, source),
+                updated_at = NOW()
+            WHERE id = $3
+            RETURNING id, amount, source, created_at, updated_at
+            "#,
+        )
+        .bind(&payload.amount)
+        .bind(&payload.source)
+        .bind(saving_id)
+        .fetch_optional(db)
+        .await?;
 
-    //     query.push_str(&format!(" WHERE id = ${} RETURNING id, amount, source, created_at, updated_at", bind_count));
-
-    //     let mut q = sqlx::query_as::<_, Transaction>(&query);
-
-    //     if let Some(amt) = amount {
-    //         q = q.bind(amt);
-    //     }
-    //     if let Some(src) = source {
-    //         q = q.bind(src);
-    //     }
-
-    //     q.bind(id).fetch_optional(pool).await
-    // }
+        result.ok_or_else(|| AppError::NotFound(format!("Saving with ID {} not found", saving_id)))
+    }
 
     pub async fn delete_saving(db: &PgPool, saving_id: i64) -> AppResult<()> {
         let result = sqlx::query("DELETE FROM transactions WHERE id = $1")
